@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenStreetMap Notes Example with Layers</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        #map { height: 400px; }
+        #notes { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="notes">
+        <h3>Notes:</h3>
+        <ul id="notesList"></ul>
+    </div>
+    <script>
+        var map = L.map('map').setView([51.505, -0.09], 13);
+
+        // Define base layers
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
+
+        var openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+        });
+
+        var cycleMap = L.tileLayer('https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png', {
+            attribution: '<a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> | Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
+
+        // Define overlay layers
+        var notes = L.layerGroup();
+
+        // Add base layer to map
+        osm.addTo(map);
+
+        // Create layer control
+        var baseLayers = {
+            "OpenStreetMap": osm,
+            "OpenTopoMap": openTopoMap,
+            "CycleMap": cycleMap
+        };
+
+        var overlays = {
+            "Notes": notes
+        };
+
+        L.control.layers(baseLayers, overlays).addTo(map);
+
+        var notesData = [];
+        var noteId = 0;
+
+        function addNote(latlng) {
+            var text = prompt("Enter note text:");
+            if (text) {
+                noteId++;
+                var note = {
+                    id: noteId,
+                    latlng: latlng,
+                    text: text
+                };
+                notesData.push(note);
+                var marker = L.marker(latlng).bindPopup(text);
+                notes.addLayer(marker);
+                updateNotesList();
+            }
+        }
+
+        function removeNote(id) {
+            notesData = notesData.filter(note => note.id !== id);
+            notes.clearLayers();
+            notesData.forEach(note => {
+                var marker = L.marker(note.latlng).bindPopup(note.text);
+                notes.addLayer(marker);
+            });
+            updateNotesList();
+        }
+
+        function updateNotesList() {
+            var notesList = document.getElementById('notesList');
+            notesList.innerHTML = '';
+            notesData.forEach(note => {
+                var li = document.createElement('li');
+                li.textContent = `Note ${note.id}: ${note.text} `;
+                var removeButton = document.createElement('button');
+                removeButton.textContent = 'Remove';
+                removeButton.onclick = function() { removeNote(note.id); };
+                li.appendChild(removeButton);
+                notesList.appendChild(li);
+            });
+        }
+
+        map.on('click', function(e) {
+            addNote(e.latlng);
+        });
+    </script>
+</body>
+</html>
